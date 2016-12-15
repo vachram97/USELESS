@@ -213,10 +213,10 @@ int last_log_send(int fd) {
 	fcntl(file, F_SETLKW, &lock_s);
 	int count = read(file, buf, 100);
 	int count_2 = read(file, buf+count, 100);
-	lock_s.l_type = F_UNLCK;
-	fcntl(file, F_SETLK, &lock_s);
 	send(fd, buf, count+count_2, MSG_NOSIGNAL);
 	ftruncate(file, 0);
+	lock_s.l_type = F_UNLCK;
+	fcntl(file, F_SETLK, &lock_s);
 	close(file);
 	return 0;
 }
