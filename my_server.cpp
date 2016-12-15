@@ -34,28 +34,31 @@ int verify_client(int, char *);
 
 int main(int argc, char *argv[]) {
 
-
-
 	if (argc != 2) {
 		printf("Usage: %s port OR %s cmd\n", argv[0], argv[0]);
 	}
 
 	if ((strcmp(argv[1], "stop\0") == 0)) {
-			if (-1 == stop_server()) {
-				printf("Not stopped: error\n");
-				return -1;
-			}
-			else printf("Stopped\n");
-			return 0;
+		if (-1 == stop_server()) {
+			printf("Not stopped: error\n");
+			return -1;
+		}
+		else printf("Stopped\n");
+		return 0;
 	}
-
-	FILE* hash_f = fopen("hash.txt", "r");
+	char passwd[20];
+	char hash[100];
+	printf("Enter passwd:\n");
+	scanf("%s", passwd);
+	hash = crypt(passwd, "$6$dvfgd$");
+	for (int i = 0; i < 20; i++) passwd[i] = 0;
+	/*FILE* hash_f = fopen("hash.txt", "r");
 	if (hash_f == NULL) {
 		printf("NO PASSWD!\n");
 		return -1;
 	}
 	char hash[100];
-	fgets(hash, 100, hash_f);
+	fgets(hash, 100, hash_f);*/
 
 	int list_sock = socket(AF_INET, SOCK_STREAM, 0);
 
