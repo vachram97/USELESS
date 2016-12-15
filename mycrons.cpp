@@ -36,7 +36,12 @@ int main (int argc, char *argv[]) {
 		printf("Signal sent\n");
 		return 0;
 	}
-
+	
+	if (argc < curr_arg + 2) {
+		printf("Usage: %s mycronfile hostfile or % stop\n", argv[0], argv[0]);
+		return 0;
+	}
+	
 	strcpy(mycron_path, argv[curr_arg]); //saving mycron file path to use it further
 	strcpy(server_path, argv[curr_arg+1]); //saving hosttab file path to use it further
 
