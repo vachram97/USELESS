@@ -50,7 +50,8 @@ int main(int argc, char *argv[]) {
 	char hash[100];
 	printf("Enter passwd:\n");
 	scanf("%s", passwd);
-	hash = crypt(passwd, "$6$dvfgd$");
+	char *hash_c = crypt(passwd, "$6$dvfgd$\0");
+	strcpy(hash, hash_c); //to save hash properly
 	for (int i = 0; i < 20; i++) passwd[i] = 0;
 	/*FILE* hash_f = fopen("hash.txt", "r");
 	if (hash_f == NULL) {
