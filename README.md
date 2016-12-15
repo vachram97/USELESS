@@ -20,9 +20,9 @@ Files:
 
 Compilation strings:  
 ```
-g++ -o execution.cpp  
-g++ -o reader.cpp  
-g++ -c mycrons.cpp execution.o reader.o -o useless_client
+g++ -c execution.cpp  
+g++ -c reader.cpp  
+g++ mycrons.cpp execution.o reader.o -o useless_client
 ```  
 
 Launch command: `useless_client mycronfile hostfile`
