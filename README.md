@@ -1,32 +1,54 @@
 # USELESS
 USELESS {aka cron} - launch commands at hosts on schedule
 
-At all servers launch: 'my_server port'
+This project consists of client part and server part.
 
-At client launch: 'mycrons mycronfile hostfile'
+## Server part
 
-To stop daemon 'prog_name stop'
+Files: my_server.cpp  
+Compilation string: `g++ -W -Wall my_server.cpp -o useless_server`  
+Launch command: `useless_server port`  
+In directory with program should be located txt file "hash.txt" with SHA-512 hash of passwd to connect with server  
+Stop command: `useless_server stop`  
 
-At mycronfile write strings like:
-min hour day month host command
-
-Avaiable time combinations are:
-min hour day month 
-* \* \* \* \*
-* \* \* \* n
-* \* \* m n
-* \* k m n
-* a b c d
-
-where \* means all allowed combinations for this measure
-
-Host can be 'localhost' or 'all' or defined in hostfile
-
-At host file should be written known hosts:
-hostname ip port passwd
+## Client part
 
 Files:
 - mycrons.cpp & includes.h — main function
 - reader.cpp & reader.h — functions for file reading
 - execution.cpp & execution.h — function for execute commands
-- my_server.cpp — server part
+
+Compilation strings:
+```
+g++ -o execution.cpp  
+g++ -o reader.cpp  
+g++ -c mycrons.cpp execution.o reader.o -o useless_client
+```  
+
+Launch command: `useless_client mycronfile hostfile`
+
+Stop command `useless_client stop`
+
+Mycronfile should contain following type of strings:
+```
+min hour day month host command
+```
+Avaiable time combinations are:
+```
+* * * *
+* * * n
+* * m n
+* k m n
+a b c d
+```   
+where \* means all allowed combinations for this measure
+
+Host can be 'localhost' or 'all' or defined in hostfile
+
+Host file should contain strings like:
+```
+hostname ip port passwd
+```  
+where hostname couldn't be `localhost` or `all`.
+
+
