@@ -7,7 +7,6 @@ This project consists of client part and server part.
 
 Files: my_server.cpp   
 Launch command: `useless_server port`  
-In directory with program should be located txt file "hash.txt" with SHA-512 hash of passwd to verify clients trying to connect with server  
 Stop command: `useless_server stop`  
 
 ## Client part
