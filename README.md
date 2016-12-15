@@ -5,8 +5,7 @@ This project consists of client part and server part.
 
 ## Server part
 
-Files: my_server.cpp  
-Compilation string: `g++ -W -Wall my_server.cpp -o useless_server`  
+Files: my_server.cpp   
 Launch command: `useless_server port`  
 In directory with program should be located txt file "hash.txt" with SHA-512 hash of passwd to verify clients trying to connect with server  
 Stop command: `useless_server stop`  
@@ -17,13 +16,6 @@ Files:
 - mycrons.cpp & includes.h — main function
 - reader.cpp & reader.h — functions for file reading
 - execution.cpp & execution.h — function for execute commands
-
-Compilation strings:  
-```
-g++ -c execution.cpp  
-g++ -c reader.cpp  
-g++ mycrons.cpp execution.o reader.o -o useless_client
-```  
 
 Launch command: `useless_client mycronfile hostfile`
 
