@@ -155,13 +155,14 @@ int execute_command_localhost(char *comm) {
 	dup2(fd, 1);
 	dup2(fd, 2);
 	struct flock lock_s = {F_WRLCK, SEEK_SET, 0, 0, 0};
-	fcntl(fd, F_SETLKW, &lock_s);
+	fcntl(fileno(short_log), F_SETLKW, &lock_s);
 	fprintf(short_log, "[%s]: Executing command '%s'...\n", make_normal_current_time(s, 30), comm);
 	int exec_stat;
 	exec_stat = system(comm);
 	fprintf(short_log, "[%s]: Execution ended with code %d\n", make_normal_current_time(s, 30), exec_stat);
 	lock_s.l_type = F_UNLCK;
-	fcntl(fd, F_SETLK, &lock_s);
+	fcntl(fileno(short_log), F_SETLK, &lock_s);
+	fclose(short_log);
 	close(fd);
 	if (exec_stat != 0) {
 		FILE *err_log = fopen("error.log", "a");
@@ -208,10 +209,15 @@ int last_log_send(int fd) {
 		//printf("SENT: %s\n", buf);
 		return -1;
 	}
+	struct flock lock_s = {F_WRLCK, SEEK_SET, 0, 0, 0};
+	fcntl(file, F_SETLKW, &lock_s);
 	int count = read(file, buf, 100);
 	int count_2 = read(file, buf+count, 100);
+	lock_s.l_type = F_UNLCK;
+	fcntl(file, F_SETLK, &lock_s);
 	send(fd, buf, count+count_2, MSG_NOSIGNAL);
-	unlink("localhost.log");
+	ftruncate(file, 0);
+	close(file);
 	return 0;
 }
 
