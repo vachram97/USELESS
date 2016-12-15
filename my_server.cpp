@@ -36,6 +36,7 @@ int main(int argc, char *argv[]) {
 
 	if (argc != 2) {
 		printf("Usage: %s port OR %s cmd\n", argv[0], argv[0]);
+		return 0;
 	}
 
 	if ((strcmp(argv[1], "stop\0") == 0)) {
