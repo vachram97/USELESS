@@ -26,7 +26,7 @@ int main (int argc, char *argv[]) {
 
 
 	if (argc == 1) {
-		printf ("Mycron is greeting you!\nUsage:\n");
+		printf ("Mycron is greeting you!\nUsage: %s mycronfile hostfile or % stop\n", argv[0], argv[0]);
 		return 0;
 	}
 
