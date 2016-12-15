@@ -51,4 +51,7 @@ hostname ip port passwd
 ```  
 where hostname couldn't be `localhost` or `all`.
 
+## Log files
+
+Program  creates log files called `host.log`, `error.log` on client computer and `host-full.log` on servers.
 
