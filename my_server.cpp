@@ -226,7 +226,7 @@ int verify_client(int fd, char *hash) {
 	}
 	buf[count] = '\0';
 	char *hash_2 = crypt(buf, hash);
-	if (strncmp(hash_2, hash, count) == 0) {
+	if (strcmp(hash_2, hash) == 0) {
 		strcpy(buf, "OK\0");
 		send (fd, buf, strlen(buf)+1, MSG_NOSIGNAL);
 		return 0;
