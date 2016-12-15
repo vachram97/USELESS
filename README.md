@@ -8,17 +8,17 @@ This project consists of client part and server part.
 Files: my_server.cpp  
 Compilation string: `g++ -W -Wall my_server.cpp -o useless_server`  
 Launch command: `useless_server port`  
-In directory with program should be located txt file "hash.txt" with SHA-512 hash of passwd to connect with server  
+In directory with program should be located txt file "hash.txt" with SHA-512 hash of passwd to verify clients trying to connect with server  
 Stop command: `useless_server stop`  
 
 ## Client part
 
-Files:
+Files:  
 - mycrons.cpp & includes.h — main function
 - reader.cpp & reader.h — functions for file reading
 - execution.cpp & execution.h — function for execute commands
 
-Compilation strings:
+Compilation strings:  
 ```
 g++ -o execution.cpp  
 g++ -o reader.cpp  
@@ -43,7 +43,7 @@ a b c d
 ```   
 where \* means all allowed combinations for this measure
 
-Host can be 'localhost' or 'all' or defined in hostfile
+Host can be `localhost` or `all` or defined in hostfile
 
 Host file should contain strings like:
 ```
