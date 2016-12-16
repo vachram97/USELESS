@@ -40,20 +40,37 @@ int main(int argc, char *argv[]) {
 	}
 
 	if ((strcmp(argv[1], "stop\0") == 0)) {
-		if (-1 == stop_server()) {
-			printf("Not stopped: error\n");
-			return -1;
-		}
-		else printf("Stopped\n");
-		return 0;
+			if (-1 == stop_server()) {
+				printf("Not stopped: error\n");
+				return -1;
+			}
+			else printf("Stopped\n");
+			return 0;
 	}
 	char passwd[20];
 	char hash[100];
-	printf("Enter passwd:\n");
-	scanf("%s", passwd);
+
+	FILE *passwd_f = fopen("passwd.txt", "r+");
+	if (passwd_f == NULL){
+		perror("NO PASSWD FILE");
+		return -1;
+	}
+	fgets(passwd, 20, passwd_f);
+	//to clean passwd file
+	/*rewind(passwd_f);
+	fprintf(passwd_f, "%s", "1111111111111111111\n");*/
+	fclose(passwd_f);
+	//*unlink("passwd.txt");
+
+	/*printf("Enter passwd:\n");
+	scanf("%s", passwd);*/
+
+	//const char passwd[] = "hallo_world";
+
 	char *hash_c = crypt(passwd, "$6$dvfgd$\0");
+	//printf("%s\n",hash_c);
 	strcpy(hash, hash_c); //to save hash properly
-	for (int i = 0; i < 20; i++) passwd[i] = 0;
+	memset(passwd, 0, 20);
 	/*FILE* hash_f = fopen("hash.txt", "r");
 	if (hash_f == NULL) {
 		printf("NO PASSWD!\n");
@@ -211,7 +228,6 @@ int last_log_send(int fd) {
 	if (-1 == (file = open("localhost.log", O_RDONLY))) {
 		strcpy(buf, "NONE\0");
 		send(fd, buf, strlen(buf)+1, MSG_NOSIGNAL);
-		//printf("SENT: %s\n", buf);
 		return -1;
 	}
 	struct flock lock_s = {F_WRLCK, SEEK_SET, 0, 0, 0};
