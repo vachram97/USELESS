@@ -96,7 +96,6 @@ int execute_command (command *comm, host *ex_host){
 		exit(EXIT_FAILURE);
 	}
 	//printf ("SENT: %s\n", buf);
-	ssize_t count;
 	if (-1 == recv(cl_sock, buf, BUF_SIZE, MSG_NOSIGNAL)) {
 		logerr((*ex_host).name, "Command sent, but connection was broken: error\n");
 		close(cl_sock);
@@ -130,10 +129,13 @@ int execute_command_localhost(command *comm) {
 	dup2(fd, 2);
 	struct flock lock_s = {F_WRLCK, SEEK_SET, 0, 0};
 	fcntl(fd, F_SETLKW, &lock_s);
-	printf("[%s]: Executing command '%s'...\n", make_normal_current_time(s, 30), comm->command_line.c_str());
+	char log[400];
+	sprintf(log, "[%s]: Executing command '%s'...\n", make_normal_current_time(s, 30), comm->command_line.c_str());
+	write(fd, log, strlen(log));
 	int exec_stat;
 	exec_stat = system(comm->command_line.c_str());
-	printf("[%s]: Execution ended with code %d\n", make_normal_current_time(s, 30), exec_stat);
+	sprintf(log, "[%s]: Execution ended with code %d\n", make_normal_current_time(s, 30), exec_stat);
+	write(fd, log, strlen(log));
 	lock_s.l_type = F_UNLCK;
 	fcntl(fd, F_SETLK, &lock_s);
 	close(fd);
@@ -177,9 +179,8 @@ int verify(int fd, string passwd) {
 	if (-1 == send(fd, passwd.c_str(), passwd.length(), MSG_NOSIGNAL)) {
 		return -1;
 	}
-	//printf("SENT: %s\n", hash);
 	if (-1 == recv(fd, buf, BUF_SIZE, MSG_NOSIGNAL)) {
-			return -1;
+		return -1;
 	}
 	if ((strcmp(buf, "OK\0") == 0)) return 0;
 	else return -1;

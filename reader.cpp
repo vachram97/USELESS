@@ -199,7 +199,7 @@ int read_server_list(char * file, vector <host> *host_list) {
 	while (!input.eof()) {
 		line_number++;
 		getline(input, line);
-		if (input.fail()) {
+		if (input.bad()) {
 			printf("Error while reading '%s': %s\n", file, strerror(errno));
 			input.close();
 			return -1;
