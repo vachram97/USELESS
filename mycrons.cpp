@@ -244,8 +244,14 @@ int get_log_host(host *host) {
 	while (0 < (count = recv(cl_sock, buf, BUF_SIZE, MSG_NOSIGNAL))) {
 		write(filelog, buf, count);
 	}
+	if (count == -1) {
+		printf("Error while getting logs from '%s': %s", host->name.c_str(), strerror(errno));
+		close (cl_sock);
+		return 0;
+	}
 	shutdown(cl_sock, SHUT_RDWR);
 	close(cl_sock);
+	close(filelog);
 	return 0;
 
 }

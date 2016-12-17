@@ -42,7 +42,7 @@ int main(int argc, char *argv[]) {
 	}
 
 	int opt;
-	while (-1 != (opt = getopt(argc, argv, "s"))) {
+	while (-1 != (opt = getopt(argc, argv, "sr"))) {
 		if (opt == '?') {
 			printf ("Usage: %s mycronfile hostfile\n", argv[0]);
 			return -1;
@@ -182,12 +182,13 @@ int execute_command_localhost(char *comm) {
 	pid_t pid_child = fork();
 	if (pid_child != 0) return 0;
 	char s[30];
-	FILE *short_log = fopen("localhost.log", "w");
-	//dup2(fd, 1);
+	FILE *short_log = fopen("localhost.log", "a");
 	//dup2(fd, 2);
 	fprintf(short_log, "[%s]: Executing command '%s'...\n", make_normal_current_time(s, 30), comm);
 	int exec_stat;
+	fclose(short_log);//to avoid spamming from system() in fd = 1,2
 	exec_stat = system(comm);
+	short_log = fopen("localhost.log", "a");
 	fprintf(short_log, "[%s]: Execution ended with code %d\n", make_normal_current_time(s, 30), exec_stat);
 	fclose(short_log);
 	if (exec_stat != 0) {
@@ -243,6 +244,7 @@ int verify_client(int fd, char *hash) {
 	}
 	buf[count] = '\0';
 	char *hash_2 = crypt(buf, hash);
+	printf("%s\n%s\n", hash, hash_2);
 	if (strcmp(hash_2, hash) == 0) {
 		strcpy(buf, "OK\0");
 		send (fd, buf, strlen(buf)+1, MSG_NOSIGNAL);
