@@ -32,17 +32,17 @@
 
 using namespace std;
 
-struct time_s {
+/*struct time_s {
 	int month;
 	int day;
 	int hour;
 	int min;
-};
+};*/
 
 struct command {
 	string command_line;
 	string host;
-	time_s execution_time;
+	struct tm execution_time;
 };
 
 struct host {
@@ -53,7 +53,7 @@ struct host {
 };
 
 struct task {
-	time_s time;
+	struct tm time;
 	int number;
 };
 

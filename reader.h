@@ -11,8 +11,8 @@
 #include "includes.h"
 
 int read_tasks(char *, vector <command> *, vector <task> *);
-int check_date(time_s *);
-int parse_time(string, time_s *);
+int check_date(struct tm *);
+int parse_time(string, struct tm *);
 int parse_string(string, command *);
 int taskscmp(task, task);
 int read_server_list(char *, vector <host> *);

@@ -10,9 +10,6 @@
 
 #include "includes.h"
 
-int time_s_cmp (time_s, time_s);
-int is_equal_time_s (time_s, time_s);
-int fill_tm_using_time_s(struct tm *, time_s *);
 int execute_command(command *, host *);
 int execute_command_localhost(command *);
 char *make_normal_current_time(char *, int);

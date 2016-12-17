@@ -22,6 +22,10 @@ int read_tasks(char * file, vector <command> *tasks, vector<task> *task_queue) {
 	int line_number = 0; //current number line
 	ifstream input;
 
+	time_t curr_time_t = time(NULL);
+	struct tm curr_time;
+	localtime_r(&curr_time_t, &curr_time);
+
 	input.open(file, ios::in);
 	if (!input.is_open()) {
 		printf("Error opening mycrontab file '%s': %s\n", file, strerror(errno));
@@ -42,62 +46,65 @@ int read_tasks(char * file, vector <command> *tasks, vector<task> *task_queue) {
 			continue;
 		}
 
+		comm.execution_time.tm_year = curr_time.tm_year;
+
+		comm.execution_time.tm_sec = 0;
 		task tmp;
 		(*tasks).push_back(comm);
 		tmp.time = comm.execution_time;
 		tmp.number = (*tasks).size()-1;
-
-		if ((comm.execution_time.min != -1) && (comm.execution_time.hour != -1)
-				&& (comm.execution_time.day != -1) && (comm.execution_time.month != -1)) {
+		if ((comm.execution_time.tm_min != -1) && (comm.execution_time.tm_hour != -1)
+				&& (comm.execution_time.tm_mday != -1) && (comm.execution_time.tm_mon != -1)) {
 			(*task_queue).push_back(tmp);
 			continue;
 		}
 
-		if ((comm.execution_time.min != -1) && (comm.execution_time.hour != -1)
-				&& (comm.execution_time.day != -1) && (comm.execution_time.month == -1)) {
+		if ((comm.execution_time.tm_min != -1) && (comm.execution_time.tm_hour != -1)
+				&& (comm.execution_time.tm_mday != -1) && (comm.execution_time.tm_mon == -1)) {
 			for (int i = 0; i < 12; i++) {
-				tmp.time.month = i;
+				tmp.time.tm_mon = i;
 				(*task_queue).push_back(tmp);
 			}
 			continue;
 		}
 
-		if ((comm.execution_time.min != -1) && (comm.execution_time.hour != -1)
-				&& (comm.execution_time.day == -1) && (comm.execution_time.month == -1)) {
+		if ((comm.execution_time.tm_min != -1) && (comm.execution_time.tm_hour != -1)
+				&& (comm.execution_time.tm_mday == -1) && (comm.execution_time.tm_mon == -1)) {
 			for (int i = 0; i < 12; i++) {
-				tmp.time.month = i;
+				tmp.time.tm_mon = i;
 				for (int j = 1; j <= mdays[i]; j++) {
-					tmp.time.day = j;
+					tmp.time.tm_mday = j;
 					(*task_queue).push_back(tmp);
 				}
 			}
 			continue;
 		}
 
-		if ((comm.execution_time.min != -1) && (comm.execution_time.hour == -1)
-				&& (comm.execution_time.day == -1) && (comm.execution_time.month == -1)) {
+		if ((comm.execution_time.tm_min != -1) && (comm.execution_time.tm_hour == -1)
+				&& (comm.execution_time.tm_mday == -1) && (comm.execution_time.tm_mon == -1)) {
 			for (int i = 0; i < 12; i++) {
-				tmp.time.month = i;
+				tmp.time.tm_mon = i;
 				for (int j = 1; j <= mdays[i]; j++) {
-					tmp.time.day = j;
+					tmp.time.tm_mday = j;
 					for (int k = 0; k < 24; k++) {
-						tmp.time.hour = k;
+						tmp.time.tm_hour = k;
 						(*task_queue).push_back(tmp);
 					}
 				}
 			}
 			continue;
 		}
-		if ((comm.execution_time.min == -1) && (comm.execution_time.hour == -1)
-				&& (comm.execution_time.day == -1) && (comm.execution_time.month == -1)) {
+
+		if ((comm.execution_time.tm_min == -1) && (comm.execution_time.tm_hour == -1)
+				&& (comm.execution_time.tm_mday == -1) && (comm.execution_time.tm_mon == -1)) {
 			for (int i = 0; i < 12; i++) {
-				tmp.time.month = i;
+				tmp.time.tm_mon = i;
 				for (int j = 1; j <= mdays[i]; j++) {
-					tmp.time.day = j;
+					tmp.time.tm_mday = j;
 					for (int k = 0; k < 24; k++) {
-						tmp.time.hour = k;
+						tmp.time.tm_hour = k;
 						for (int l = 0; l < 60; l++) {
-							tmp.time.min = l;
+							tmp.time.tm_min = l;
 							(*task_queue).push_back(tmp);
 						}
 					}
@@ -105,11 +112,11 @@ int read_tasks(char * file, vector <command> *tasks, vector<task> *task_queue) {
 			}
 			continue;
 		}
+
 		(*tasks).pop_back();
 		printf("Error in %d string in '%s':ignored\n", line_number, file);
 	}
 	input.close();
-
 	sort((*task_queue).begin(), (*task_queue).end(), taskscmp);
 	return 0;
 }
@@ -142,18 +149,19 @@ int parse_string(string line, command *comm) {
  * function get string and pointer at time structure and fill this structure
  * return 0 on success, -1 otherwise
  */
-int parse_time(string line, time_s *tim) {
+int parse_time(string line, struct tm *tim) {
 	size_t space;
 	//replacing * -> -1
 	while (string::npos != (space = line.find('*'))) {
 		line.replace(space, 1, "-1");
 	}
-	if (4 != sscanf(line.c_str(), "%d %d %d %d", &(tim->min), &(tim->hour), &(tim->day), &(tim->month))) {
+	if (4 != sscanf(line.c_str(), "%d %d %d %d", &(tim->tm_min), &(tim->tm_hour), &(tim->tm_mday), &(tim->tm_mon))) {
 		return -1;
 	}
 	if (-1 == check_date(tim)) {
 		return -1;
 	}
+	tim->tm_isdst = 0; //to determine DST
 	return 0;
 }
 
@@ -162,10 +170,10 @@ int parse_time(string line, time_s *tim) {
  */
 //TODO: think about more correct checking, now
 //we are assuming that people couldn't make mistakes
-int check_date(time_s *tim) {
-	if ((tim->min > 59) || (tim->min < -1) || (tim->hour > 23)
-			|| (tim->hour < -1) || (tim->day > 31) || (tim->day < -1)
-			|| (tim->month > 12) || (tim->month < -1)) return -1;
+int check_date(struct tm *tim) {
+	if ((tim->tm_min > 59) || (tim->tm_min < -1) || (tim->tm_hour > 23)
+			|| (tim->tm_hour < -1) || (tim->tm_mday > 31) || (tim->tm_mday < -1)
+			|| (tim->tm_mon > 12) || (tim->tm_mon < -1)) return -1;
 	return 0;
 }
 
@@ -174,10 +182,10 @@ int check_date(time_s *tim) {
  * than the second and 0 otherwise
  */
 int taskscmp(task first, task second) {
-	int k = (second.time.min - first.time.min)
-			+ (second.time.hour - first.time.hour) * 100
-			+ (second.time.day - first.time.day) * 10000
-			+ (second.time.month - first.time.month) * 1000000;
+	int k = (second.time.tm_min - first.time.tm_min)
+			+ (second.time.tm_hour - first.time.tm_hour) * 100
+			+ (second.time.tm_mday - first.time.tm_mday) * 10000
+			+ (second.time.tm_mon - first.time.tm_mon) * 1000000;
 	return (k > 0) ? 1 : 0;
 }
 
