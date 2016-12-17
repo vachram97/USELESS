@@ -42,7 +42,7 @@ int main(int argc, char *argv[]) {
 	}
 
 	int opt;
-	while (-1 != (opt = getopt(argc, argv, "sr"))) {
+	while (-1 != (opt = getopt(argc, argv, "s"))) {
 		if (opt == '?') {
 			printf ("Usage: %s mycronfile hostfile\n", argv[0]);
 			return -1;
