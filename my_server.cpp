@@ -21,12 +21,14 @@
 #include <time.h>
 #include <signal.h>
 #include <sys/wait.h>
+#include <ctype.h>
 #include <crypt.h>
+#include <errno.h>
 #define BUF_SIZE 8128
 
 using namespace std;
 
-int stop_server();
+int stop_serv();
 int execute_command_localhost(char *);
 char *make_normal_current_time(char *, int);
 int last_log_send(int);
@@ -39,15 +41,25 @@ int main(int argc, char *argv[]) {
 		return 0;
 	}
 
-	if ((strcmp(argv[1], "stop\0") == 0)) {
-			if (-1 == stop_server()) {
-				printf("Not stopped: error\n");
+	int opt;
+	while (-1 != (opt = getopt(argc, argv, "sr"))) {
+		if (opt == '?') {
+			printf ("Usage: %s mycronfile hostfile\n", argv[0]);
+			return -1;
+		}
+		if ((opt == 's') && (argc == 2)) {
+			if (-1 == stop_serv()) {
+				printf("Not stopped\n");
 				return -1;
 			}
-			else printf("Stopped\n");
+			printf("Stopped\n");
 			return 0;
+		}
+		printf ("Usage: %s mycronfile hostfile\n", argv[0]);
+		return -1;
 	}
-	char passwd[20];
+
+	char passwd[20] = "passwd";
 	char hash[100];
 
 	FILE *passwd_f = fopen("passwd.txt", "r+");
@@ -55,10 +67,17 @@ int main(int argc, char *argv[]) {
 		perror("NO PASSWD FILE");
 		return -1;
 	}
-	fgets(passwd, 20, passwd_f);
+	char c;
+	for (int i = 0; i < 20; i++) {
+		c = fgetc(passwd_f);
+		if (!isalnum(c)) {
+			break;
+		}
+		passwd[i] = c;
+	}
 	//to clean passwd file
-	/*rewind(passwd_f);
-	fprintf(passwd_f, "%s", "1111111111111111111\n");*/
+	rewind(passwd_f);
+	fprintf(passwd_f, "%s", "1111111111111111111\n");
 	fclose(passwd_f);
 	//*unlink("passwd.txt");
 
@@ -68,16 +87,8 @@ int main(int argc, char *argv[]) {
 	//const char passwd[] = "hallo_world";
 
 	char *hash_c = crypt(passwd, "$6$dvfgd$\0");
-	//printf("%s\n",hash_c);
 	strcpy(hash, hash_c); //to save hash properly
 	memset(passwd, 0, 20);
-	/*FILE* hash_f = fopen("hash.txt", "r");
-	if (hash_f == NULL) {
-		printf("NO PASSWD!\n");
-		return -1;
-	}
-	char hash[100];
-	fgets(hash, 100, hash_f);*/
 
 	int list_sock = socket(AF_INET, SOCK_STREAM, 0);
 
@@ -97,10 +108,10 @@ int main(int argc, char *argv[]) {
 		return -1;
 	}
 	//making daemon
-	/*close(0);
+	close(0);
 	close(1);
 	close(2);
-	if (0 != fork()) return 0;*/
+	if (0 != fork()) return 0;
 
 	//to know pid for stopping
 	FILE *pid_f = fopen ("pid.txt", "w");
@@ -129,26 +140,25 @@ int main(int argc, char *argv[]) {
 		char buf[BUF_SIZE];
 		while (1) {
 			if (-1 == recv(cl_sock, buf, BUF_SIZE, MSG_NOSIGNAL)) {
-				//log
 				close(cl_sock);
 				exit(EXIT_FAILURE);
 			}
 			//printf("GOT: %s\n", buf);
-			if (strcmp(buf, "GET\0") == 0) {
+			if (strcmp(buf, "GETLOG") == 0) {
 				last_log_send(cl_sock);
 				continue;
 			}
 
-			if (strncmp(buf, "COMM\0", 4) == 0) {
-				strcpy(buf, "OK\0");
+			if (strncmp(buf, "COMM", 4) == 0) {
+				strcpy(buf, "OK");
 				send(cl_sock, buf, strlen(buf)+1, MSG_NOSIGNAL);
 				//printf("SENT: %s\n", buf);
 				execute_command_localhost(buf + 5);
 				continue;
 			}
 
-			if (strcmp(buf, "DISCONNECT\0") == 0) {
-				strcpy(buf, "OK\0");
+			if (strcmp(buf, "DISCONNECT") == 0) {
+				strcpy(buf, "OK");
 				send(cl_sock, buf, strlen(buf)+1, MSG_NOSIGNAL);
 				//printf("SENT: %s\n", buf);
 				shutdown(cl_sock, SHUT_RDWR);
@@ -172,20 +182,14 @@ int execute_command_localhost(char *comm) {
 	pid_t pid_child = fork();
 	if (pid_child != 0) return 0;
 	char s[30];
-	int fd = open("localhost_full.log", O_WRONLY | O_APPEND | O_CREAT, 0700);
 	FILE *short_log = fopen("localhost.log", "w");
-	dup2(fd, 1);
-	dup2(fd, 2);
-	struct flock lock_s = {F_WRLCK, SEEK_SET, 0, 0, 0};
-	fcntl(fileno(short_log), F_SETLKW, &lock_s);
+	//dup2(fd, 1);
+	//dup2(fd, 2);
 	fprintf(short_log, "[%s]: Executing command '%s'...\n", make_normal_current_time(s, 30), comm);
 	int exec_stat;
 	exec_stat = system(comm);
 	fprintf(short_log, "[%s]: Execution ended with code %d\n", make_normal_current_time(s, 30), exec_stat);
-	lock_s.l_type = F_UNLCK;
-	fcntl(fileno(short_log), F_SETLK, &lock_s);
 	fclose(short_log);
-	close(fd);
 	if (exec_stat != 0) {
 		FILE *err_log = fopen("error.log", "a");
 		fprintf(err_log, "[%s]: Command '%s' at localhost returned %d\n",
@@ -206,18 +210,6 @@ char *make_normal_current_time(char * s, int size) {
 	return s;
 }
 
-/*
- * to stop server
- */
-int stop_server() {
-
-	FILE* pid_f = fopen("pid.txt", "r");
-	pid_t pid;
-	fscanf(pid_f, "%d", &pid);
-	kill(pid, SIGTERM);
-
-	return 0;
-}
 
 /*
  * last log sending
@@ -230,16 +222,12 @@ int last_log_send(int fd) {
 		send(fd, buf, strlen(buf)+1, MSG_NOSIGNAL);
 		return -1;
 	}
-	struct flock lock_s = {F_WRLCK, SEEK_SET, 0, 0, 0};
-	fcntl(file, F_SETLKW, &lock_s);
-	int count = read(file, buf, 100);
-	int count_2 = read(file, buf+count, 100);
-	send(fd, buf, count+count_2, MSG_NOSIGNAL);
-	ftruncate(file, 0);
-	lock_s.l_type = F_UNLCK;
-	fcntl(file, F_SETLK, &lock_s);
-	close(file);
-	return 0;
+	ssize_t count;
+	while (0 < (count = read(file, buf, BUF_SIZE))) {
+		if (-1 == send(fd, buf, count, MSG_NOSIGNAL)) break;
+	}
+	close(fd);
+	exit(0);
 }
 
 /*
@@ -257,6 +245,21 @@ int verify_client(int fd, char *hash) {
 		strcpy(buf, "OK\0");
 		send (fd, buf, strlen(buf)+1, MSG_NOSIGNAL);
 		return 0;
+	}
+	return -1;
+}
+
+ /*
+  * to stop daemon
+  */
+int stop_serv() {
+	FILE* pid_f = fopen("pid.txt", "r");
+	pid_t pid;
+	fscanf(pid_f, "%d", &pid);
+	kill(pid, SIGTERM);
+	sleep(1);
+	if (-1 == kill(pid, 0)) {
+		if (errno == ESRCH) return 0;
 	}
 	return -1;
 }
