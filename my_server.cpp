@@ -226,6 +226,8 @@ int last_log_send(int fd) {
 	while (0 < (count = read(file, buf, BUF_SIZE))) {
 		if (-1 == send(fd, buf, count, MSG_NOSIGNAL)) break;
 	}
+	shutdown(fd, SHUT_RDWR);
+	close(file);
 	close(fd);
 	exit(0);
 }
