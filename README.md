@@ -7,7 +7,7 @@ This project consists of client part and server part.
 
 Files: my_server.cpp   
 Launch command: `useless_server port`  
-Stop command: `useless_server stop`  
+Stop command: `useless_server -s`  
 
 ## Client part
 
@@ -18,7 +18,9 @@ Files:
 
 Launch command: `useless_client mycronfile hostfile`
 
-Stop command `useless_client stop`
+Stop command `useless_client -s`
+
+Receiving logs command: `useless_client -r`
 
 Mycronfile should contain following type of strings:
 ```
@@ -44,5 +46,5 @@ where hostname couldn't be `localhost` or `all`.
 
 ## Log files
 
-Program  creates log files called `host.log`, `error.log` on client computer and `host-full.log` on servers.
+Program  creates log files called `host.log`, `error.log` on client computer and `localhost.log` on servers.
 
