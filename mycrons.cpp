@@ -8,9 +8,9 @@
  ============================================================================
  */
 
-#include "includes.h"
-#include "reader.h"
-#include "execution.h"
+#include "includes.h" //main includes
+#include "reader.h" //reading functions
+#include "execution.h" //functions to send commands
 
 void run_cron(vector<command> *, vector<task> *, vector<host> *);
 int stop_serv();
@@ -23,8 +23,8 @@ int main (int argc, char *argv[]) {
 	char mycron_path[PATH_MAX]; //path of mycrontabfile
 	char server_path[PATH_MAX]; //path of hosttab file
 	vector <command> command_list; //command list
-	vector <task> task_queue;
-	vector <host> hosts; //server list
+	vector <task> task_queue; //task list
+	vector <host> hosts; //hosts list
 
 	if (argc == 1) {
 		printf ("Usage: %s mycronfile hostfile\n", argv[0]);
@@ -37,6 +37,7 @@ int main (int argc, char *argv[]) {
 			printf ("Usage: %s mycronfile hostfile\n", argv[0]);
 			return -1;
 		}
+		//-s -- stopping
 		if ((opt == 's') && (argc == 2)) {
 			if (-1 == stop_serv()) {
 				printf("Not stopped\n");
@@ -45,6 +46,7 @@ int main (int argc, char *argv[]) {
 			printf("Stopped\n");
 			return 0;
 		}
+		//-r -- receiving files from remote
 		if ((opt == 'r') && (argc == 2)) {
 			get_logs();
 			return 0;
@@ -52,12 +54,17 @@ int main (int argc, char *argv[]) {
 		printf ("Usage: %s mycronfile hostfile\n", argv[0]);
 		return -1;
 	}
+
+	//too much arguments
 	if (optind + 2 > argc) {
 		printf ("Usage: %s mycronfile hostfile\n", argv[0]);
 		return -1;
 	}
+
+	//saving paths
 	strcpy(mycron_path, argv[optind]);
 	strcpy(server_path, argv[optind+1]);
+
 	//reading mycrontab
 	if (-1 == read_tasks(mycron_path, &command_list, &task_queue)) {
 		printf("Reading mycrontab failed\n");
@@ -80,6 +87,7 @@ int main (int argc, char *argv[]) {
 	fprintf(pid_f,"%d\n", getpid());
 	fclose(pid_f);
 
+	//to know hosstabfilepath for receving logs in -r mode
 	FILE *host_f = fopen ("host_path.txt", "w");
 	fprintf(host_f, "%s", server_path);
 	fclose(host_f);
@@ -100,6 +108,7 @@ void run_cron (vector<command> *comm_list, vector<task> *task_list, vector<host>
 
 	vector<task>::iterator next_task = (*task_list).begin();
 
+	//if launch time is over we put off it for a year and in result we found next task
 	while (time_cmp(&curr_time, &next_task->time) == 0) {
 		//putting off launch at next year
 		next_task->time.tm_year++;
@@ -116,7 +125,7 @@ void run_cron (vector<command> *comm_list, vector<task> *task_list, vector<host>
 		//collecting childs
 		while (waitpid(-1, 0, WNOHANG) > 0);
 
-		//sleeping
+		//sleeping for a necessary time before next execution
 		next_exec_time_t = mktime(&(next_task->time));
 		long int wait_sec = next_exec_time_t - time(NULL);
 
@@ -144,7 +153,7 @@ void run_cron (vector<command> *comm_list, vector<task> *task_list, vector<host>
 				if (next_task == (*task_list).end())next_task = (*task_list).begin();
 				continue;
 			}
-
+			//at one of the remote hosts defined in hostlist
 			for (unsigned int i = 0; i < (*host_list).size(); i++) {
 				if ((*host_list).at(i).name == (*comm_list).at(next_task->number).host) {
 					//puts("Executing nonlocal\n");
@@ -172,12 +181,16 @@ int stop_serv() {
 	fscanf(pid_f, "%d", &pid);
 	kill(pid, SIGTERM);
 	sleep(1);
+	//if process was killed kill() would return -1 with ESRCH
 	if (-1 == kill(pid, 0)) {
 		if (errno == ESRCH) return 0;
 	}
 	return -1;
 }
 
+/*
+ * getting logs from remote function
+ */
 int get_logs() {
 	FILE *host_path_file = fopen("host_path.txt", "r");
 	char host_path[PATH_MAX];
@@ -189,7 +202,7 @@ int get_logs() {
 		printf("Reading hosttab failed\n");
 		return -1;
 	}
-
+	//for all hosts we getting log
 	for (unsigned int i = 0; i < hosts.size(); i++) {
 		get_log_host(&hosts.at(i));
 	}
@@ -213,12 +226,12 @@ int get_log_host(host *host) {
 		close(cl_sock);
 		exit(EXIT_FAILURE);
 	}
-
+	//connection established, verifying stage
 	if (-1 == verify(cl_sock, host->passwd)) {
 		printf("'%s': Connection rejected\n", host->name.c_str());
 		return -1;
 	}
-
+	//sending command
 	strcpy(buf, "GETLOG");
 	if (-1 == send(cl_sock, buf, strlen(buf)+1, MSG_NOSIGNAL)) {
 		printf("Error getting logs from %s: %s\n", host->name.c_str(), strerror(errno));
@@ -239,11 +252,13 @@ int get_log_host(host *host) {
 		return 0;
 	}
 	string filename = host->name + ".log";
+	//creating file for logs
 	int filelog = open (filename.c_str(), O_WRONLY|O_CREAT|O_TRUNC, 0700);
 	write(filelog, buf, count);
 	while (0 < (count = recv(cl_sock, buf, BUF_SIZE, MSG_NOSIGNAL))) {
 		write(filelog, buf, count);
 	}
+	//if something goes wrong
 	if (count == -1) {
 		printf("Error while getting logs from '%s': %s", host->name.c_str(), strerror(errno));
 		close (cl_sock);

@@ -5,7 +5,8 @@ This project consists of client part and server part.
 
 ## Server part
 
-Files: my_server.cpp   
+Files: my_server.cpp  
+Compilation string: `g++ -W -Wall my_server.cpp -o useless_server -lcrypt`
 Launch command: `useless_server port`  
 Stop command: `useless_server -s`  
 
@@ -16,10 +17,15 @@ Files:
 - reader.cpp & reader.h — functions for file reading
 - execution.cpp & execution.h — function for execute commands
 
-Launch command: `useless_client mycronfile hostfile`
+Compilation:
+```
+g++ -c reader.cpp
+g++ -c execution.cpp
+g++ mycrons.cpp reader.o execution.o -o useless_client
+```
 
-Stop command `useless_client -s`
-
+Launch command: `useless_client mycronfile hostfile`  
+Stop command `useless_client -s`  
 Receiving logs command: `useless_client -r`
 
 Mycronfile should contain following type of strings:

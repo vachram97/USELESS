@@ -221,16 +221,26 @@ int read_server_list(char * file, vector <host> *host_list) {
 			continue;
 		}
 		curr_host.name = line.substr(0, space);
-		if ((curr_host.name == "all") || (curr_host.name == "localhost")) continue;
-		//get ip and make an address structure
+
+		//if name is all or localhost - error in line cause these words are used
+		if ((curr_host.name == "all") || (curr_host.name == "localhost")) {
+			printf("Error in %d string of '%s': ignored\n", line_number, file);
+			continue;
+		}
+
+		//get ip and make an address structure(space is last space position)
 		size_t n_space = line.find(' ', space + 1);
+		if (n_space == string::npos) {
+			printf("Error in %d string of '%s': ignored\n", line_number, file);
+			continue;
+		}
 		string tmp = line.substr(space + 1, n_space - space - 1);
 		if (1 != inet_pton(AF_INET, tmp.c_str(), (void *)&(curr_host.addr))) {
 			printf("Error in %d string of '%s': ignored\n", line_number, file);
 			continue;
 		}
 
-		//get port and reverse byte order
+		//get port and reverse byte order(n_space is last space position)
 		space = line.find(' ', n_space + 1);
 		if (space == string::npos) {
 			printf("Error in %d string of '%s': ignored\n", line_number, file);
@@ -243,7 +253,8 @@ int read_server_list(char * file, vector <host> *host_list) {
 			continue;
 		}
 		curr_host.port = htons(port_host);
-		//passwd
+
+		//get passwd(space is last space position)
 		n_space = line.find(' ', space + 1);
 		if (n_space != string::npos) {
 			printf("Error in %d string of '%s': ignored\n", line_number, file);
@@ -251,8 +262,10 @@ int read_server_list(char * file, vector <host> *host_list) {
 		}
 		curr_host.passwd = line.substr(space+1);
 
+		//adding host in list
 		(*host_list).push_back(curr_host);
 	}
+	//sorting hosts in alphabetical order
 	sort((*host_list).begin(), (*host_list).end(), host_cmp_by_name);
 	return 0;
 }

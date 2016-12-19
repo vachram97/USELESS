@@ -11,6 +11,7 @@
  * executes command on host
  */
 int execute_command (command *comm, host *ex_host){
+	//creates special process for execution
 	pid_t pid_child = fork();
 	if (pid_child != 0) return 0;
 
@@ -28,32 +29,12 @@ int execute_command (command *comm, host *ex_host){
 		close(cl_sock);
 		exit(EXIT_FAILURE);
 	}
-
+	//verification procedure
 	if (-1 == verify(cl_sock, (*ex_host).passwd)) {
 		logerr(ex_host->name, "NO VERIFICATION: error\n");
 		exit(EXIT_FAILURE);
 	}
-	//checking for new information
-	/*strcpy(buf, "GET\0");
-	if (-1 == send(cl_sock, buf, strlen(buf)+1, MSG_NOSIGNAL)) {
-		logerr((*ex_host).name, "Command isn't sent: error\n");
-		exit(EXIT_FAILURE);
-	}
-	//printf("SENT: %s\n", buf);
-	ssize_t size;
-	if (-1 == (size = recv(cl_sock, buf, BUF_SIZE-1, MSG_NOSIGNAL))) {
-		logerr((*ex_host).name, "Command isn't sent: error\n");
-		exit(EXIT_FAILURE);
-	}
-	//printf("GOT: %s\n", buf);
-	buf[size] = '\n';
-	if (strcmp(buf, "NONE\0") != 0) {
-		string file = (*ex_host).name + ".log";
-		int fd = open(file.c_str(), O_WRONLY|O_APPEND|O_CREAT, 0700);
-		write(fd, buf, size);
-		close(fd);
-	}*/
-
+	//sending command
 	strcpy(buf, "COMM \0");
 	strcat(buf, (*comm).command_line.c_str());
 
@@ -62,13 +43,13 @@ int execute_command (command *comm, host *ex_host){
 		close(cl_sock);
 		exit(EXIT_FAILURE);
 	}
-	//printf ("SENT: %s\n", buf);
+	
 	if (-1 == recv(cl_sock, buf, BUF_SIZE, MSG_NOSIGNAL)) {
 		logerr(ex_host->name, "Command sent, but connection was broken: error\n");
 		close(cl_sock);
 		exit(EXIT_FAILURE);
 	}
-	///printf ("GOT: %s\n", buf);
+	
 	if (strcmp(buf, "OK\0") != 0) {
 		logerr(ex_host->name, "Command rejected by server\n");
 	}
@@ -86,20 +67,22 @@ int execute_command (command *comm, host *ex_host){
  * executed command locally, writing output in localhost.log
  */
 int execute_command_localhost(command *comm) {
+	//create process for execution
 	pid_t pid_child = fork();
 	if (pid_child != 0) return 0;
 	char s[30];
+	//opening filelog
 	int fd = open("localhost.log", O_WRONLY | O_APPEND | O_CREAT, 0700);
-	//dup2(fd, 1);
-	//dup2(fd, 2);
 	char log[400];
 	sprintf(log, "[%s]: Executing command '%s'...\n", make_normal_current_time(s, 30), comm->command_line.c_str());
 	write(fd, log, strlen(log));
+	//execution command
 	int exec_stat;
 	exec_stat = system(comm->command_line.c_str());
 	sprintf(log, "[%s]: Execution ended with code %d\n", make_normal_current_time(s, 30), exec_stat);
 	write(fd, log, strlen(log));
 	close(fd);
+	//if smth goes wrong
 	if (exec_stat != 0) {
 		FILE *err_log = fopen("error.log", "a");
 		fprintf(err_log, "[%s]: Command '%s' at localhost returned %d\n",

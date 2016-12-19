@@ -42,11 +42,12 @@ int main(int argc, char *argv[]) {
 	}
 
 	int opt;
-	while (-1 != (opt = getopt(argc, argv, "sr"))) {
+	while (-1 != (opt = getopt(argc, argv, "s"))) {
 		if (opt == '?') {
 			printf ("Usage: %s mycronfile hostfile\n", argv[0]);
 			return -1;
 		}
+		//-s stop option
 		if ((opt == 's') && (argc == 2)) {
 			if (-1 == stop_serv()) {
 				printf("Not stopped\n");
@@ -68,6 +69,7 @@ int main(int argc, char *argv[]) {
 		return -1;
 	}
 	char c;
+	//reading passwd while non_alpha and non_number char had read
 	for (int i = 0; i < 20; i++) {
 		c = fgetc(passwd_f);
 		if (!isalnum(c)) {
@@ -80,10 +82,12 @@ int main(int argc, char *argv[]) {
 	fprintf(passwd_f, "%s", "1111111111111111111\n");
 	fclose(passwd_f);
 
+	//save passwd hash
 	char *hash_c = crypt(passwd, "$6$dvfgd$\0");
 	strcpy(hash, hash_c); //to save hash properly
 	memset(passwd, 0, 20);
 
+	//creating listening socket
 	int list_sock = socket(AF_INET, SOCK_STREAM, 0);
 
 	struct sockaddr_in server;
@@ -111,55 +115,59 @@ int main(int argc, char *argv[]) {
 	FILE *pid_f = fopen ("pid.txt", "w");
 	fprintf(pid_f,"%d\n", getpid());
 	fclose(pid_f);
+	
 	unlink("localhost.log");
+	
 	while (1) {
 		//collecting childs
 		while (waitpid(-1, 0, WNOHANG) > 0);
+		//waiting for connection
 		int cl_sock;
 		struct sockaddr_in client;
 		socklen_t addrlen= sizeof(client);
 		if (-1 == (cl_sock = accept(list_sock, (struct sockaddr *) &client, &addrlen))) {
 			return -1;
 		}
+		//creating process to work with client, the parent waits for another
 		pid_t child_pid = fork();
 		if (child_pid != 0) {
 			close(cl_sock);
 			continue;
 		}
 		close(list_sock);
+		//checking passwd
 		if (-1 == verify_client(cl_sock, hash)) {
 			close(cl_sock);
 			exit(EXIT_FAILURE);
 		}
 		char buf[BUF_SIZE];
 		while (1) {
+			//receiving command from client
 			if (-1 == recv(cl_sock, buf, BUF_SIZE, MSG_NOSIGNAL)) {
 				close(cl_sock);
 				exit(EXIT_FAILURE);
 			}
-			//printf("GOT: %s\n", buf);
+			//getting logfile
 			if (strcmp(buf, "GETLOG") == 0) {
 				last_log_send(cl_sock);
 				continue;
 			}
-
+			//command execution
 			if (strncmp(buf, "COMM", 4) == 0) {
 				strcpy(buf, "OK");
 				send(cl_sock, buf, strlen(buf)+1, MSG_NOSIGNAL);
-				//printf("SENT: %s\n", buf);
 				execute_command_localhost(buf + 5);
 				continue;
 			}
-
+			//to disconnect
 			if (strcmp(buf, "DISCONNECT") == 0) {
 				strcpy(buf, "OK");
 				send(cl_sock, buf, strlen(buf)+1, MSG_NOSIGNAL);
-				//printf("SENT: %s\n", buf);
 				shutdown(cl_sock, SHUT_RDWR);
 				close(cl_sock);
 				break;
 			}
-
+			//if no match for command found, the connection would be closed
 			close(cl_sock);
 			exit(EXIT_FAILURE);
 		}
@@ -173,23 +181,20 @@ int main(int argc, char *argv[]) {
  * executed command locally, output is in localhost.log
  */
 int execute_command_localhost(char *comm) {
+
+	//creating process for executing
 	pid_t pid_child = fork();
 	if (pid_child != 0) return 0;
 	char s[30];
-	FILE *short_log = fopen("localhost.log", "a");
-	//dup2(fd, 2);
+	FILE *short_log = fopen("localhost.log", "a");//logfile
 	fprintf(short_log, "[%s]: Executing command '%s'...\n", make_normal_current_time(s, 30), comm);
 	int exec_stat;
 	fclose(short_log);//to avoid spamming from system() in fd = 1,2
 	exec_stat = system(comm);
+	//opening log one more time for logging
 	short_log = fopen("localhost.log", "a");
-	fprintf(short_log, "[%s]: Execution ended with code %d\n", make_normal_current_time(s, 30), exec_stat);
+	fprintf(short_log, "[%s]: Execution of '%s' ended with code %d\n", make_normal_current_time(s, 30), comm, exec_stat);
 	fclose(short_log);
-	if (exec_stat != 0) {
-		FILE *err_log = fopen("error.log", "a");
-		fprintf(err_log, "[%s]: Command '%s' at localhost returned %d\n",
-				make_normal_current_time(s, 30), comm, exec_stat);
-	}
 	exit (EXIT_SUCCESS);
 }
 
@@ -212,12 +217,14 @@ char *make_normal_current_time(char * s, int size) {
 int last_log_send(int fd) {
 	char buf[BUF_SIZE];
 	int file;
+	//if no logfile found
 	if (-1 == (file = open("localhost.log", O_RDONLY))) {
 		strcpy(buf, "NONE\0");
 		send(fd, buf, strlen(buf)+1, MSG_NOSIGNAL);
 		return -1;
 	}
 	ssize_t count;
+	//sending file
 	while (0 < (count = read(file, buf, BUF_SIZE))) {
 		if (-1 == send(fd, buf, count, MSG_NOSIGNAL)) break;
 	}
@@ -233,10 +240,12 @@ int last_log_send(int fd) {
 int verify_client(int fd, char *hash) {
 	char buf[BUF_SIZE];
 	int count;
+	//receiving passwd
 	if (-1 == (count = recv(fd, buf, BUF_SIZE, MSG_NOSIGNAL))) {
 		return -1;
 	}
 	buf[count] = '\0';
+	//calculating hash for passwd and comparing it with saved
 	char *hash_2 = crypt(buf, hash);
 	printf("%s\n%s\n", hash, hash_2);
 	if (strcmp(hash_2, hash) == 0) {
@@ -254,8 +263,10 @@ int stop_serv() {
 	FILE* pid_f = fopen("pid.txt", "r");
 	pid_t pid;
 	fscanf(pid_f, "%d", &pid);
+	//send signal
 	kill(pid, SIGTERM);
 	sleep(1);
+	//checking if process was killed
 	if (-1 == kill(pid, 0)) {
 		if (errno == ESRCH) return 0;
 	}
