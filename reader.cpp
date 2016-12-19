@@ -35,30 +35,38 @@ int read_tasks(char * file, vector <command> *tasks, vector<task> *task_queue) {
 	while (!input.eof()) {
 		line_number++;
 		getline(input, line);
-		if (input.fail()) {
+		if (input.bad()) {
 			printf("Error while reading '%s': %s\n", file, strerror(errno));
 			input.close();
 			return -1;
 		}
+		if (input.fail()) break;
+		if (line.length() == 0) continue; //zero-length lines should be ignored
 		if (line[0] == '#') continue; //comments shouldn't be read
+		//getting parsed structure
 		if (-1 == parse_string(line, &comm)) {
 			printf("Error in %d string of '%s': ignored\n", line_number, file);
 			continue;
 		}
 
+		//next exec will be this year
 		comm.execution_time.tm_year = curr_time.tm_year;
-
 		comm.execution_time.tm_sec = 0;
+	
+		//creating structures for supported conbinations of *
 		task tmp;
+		//saving command
 		(*tasks).push_back(comm);
+		//copying time
 		tmp.time = comm.execution_time;
 		tmp.number = (*tasks).size()-1;
+		//a b c d
 		if ((comm.execution_time.tm_min != -1) && (comm.execution_time.tm_hour != -1)
 				&& (comm.execution_time.tm_mday != -1) && (comm.execution_time.tm_mon != -1)) {
 			(*task_queue).push_back(tmp);
 			continue;
 		}
-
+		//a b c *
 		if ((comm.execution_time.tm_min != -1) && (comm.execution_time.tm_hour != -1)
 				&& (comm.execution_time.tm_mday != -1) && (comm.execution_time.tm_mon == -1)) {
 			for (int i = 0; i < 12; i++) {
@@ -67,7 +75,7 @@ int read_tasks(char * file, vector <command> *tasks, vector<task> *task_queue) {
 			}
 			continue;
 		}
-
+		//a b * *
 		if ((comm.execution_time.tm_min != -1) && (comm.execution_time.tm_hour != -1)
 				&& (comm.execution_time.tm_mday == -1) && (comm.execution_time.tm_mon == -1)) {
 			for (int i = 0; i < 12; i++) {
@@ -79,7 +87,7 @@ int read_tasks(char * file, vector <command> *tasks, vector<task> *task_queue) {
 			}
 			continue;
 		}
-
+		//a * * *
 		if ((comm.execution_time.tm_min != -1) && (comm.execution_time.tm_hour == -1)
 				&& (comm.execution_time.tm_mday == -1) && (comm.execution_time.tm_mon == -1)) {
 			for (int i = 0; i < 12; i++) {
@@ -94,7 +102,7 @@ int read_tasks(char * file, vector <command> *tasks, vector<task> *task_queue) {
 			}
 			continue;
 		}
-
+		//* * * *
 		if ((comm.execution_time.tm_min == -1) && (comm.execution_time.tm_hour == -1)
 				&& (comm.execution_time.tm_mday == -1) && (comm.execution_time.tm_mon == -1)) {
 			for (int i = 0; i < 12; i++) {
@@ -112,7 +120,7 @@ int read_tasks(char * file, vector <command> *tasks, vector<task> *task_queue) {
 			}
 			continue;
 		}
-
+		//if no supported combinations fits, command should be deleted
 		(*tasks).pop_back();
 		printf("Error in %d string in '%s':ignored\n", line_number, file);
 	}
@@ -212,6 +220,8 @@ int read_server_list(char * file, vector <host> *host_list) {
 			input.close();
 			return -1;
 		}
+		if (input.fail()) break;
+		if (line.length() == 0) continue; //zero-length line ignoring
 		if (line[0] == '#') continue; //comments shouldn't be read
 
 		//get name

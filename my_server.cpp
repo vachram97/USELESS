@@ -24,6 +24,7 @@
 #include <ctype.h>
 #include <crypt.h>
 #include <errno.h>
+#include <string>
 #define BUF_SIZE 8128
 
 using namespace std;
@@ -82,8 +83,15 @@ int main(int argc, char *argv[]) {
 	fprintf(passwd_f, "%s", "1111111111111111111\n");
 	fclose(passwd_f);
 
+	string salt = "$6$";
+	srand(time(NULL));
+	for (int i = 0; i < 5; i++) {
+		salt += ((char)rand()%26 + 'a');
+	}
+	salt = salt + "$";
+
 	//save passwd hash
-	char *hash_c = crypt(passwd, "$6$dvfgd$\0");
+	char *hash_c = crypt(passwd, salt.c_str());
 	strcpy(hash, hash_c); //to save hash properly
 	memset(passwd, 0, 20);
 
