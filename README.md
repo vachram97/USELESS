@@ -6,8 +6,8 @@ This project consists of client part and server part.
 ## Server part
 
 Files: my_server.cpp  
-Compilation string: `g++ -W -Wall my_server.cpp -o useless_server -lcrypt`
-Launch command: `useless_server port`  
+Compilation string: `g++ -W -Wall my_server.cpp -o useless_server -lcrypt`  
+Launch command: `useless_server port`   
 Stop command: `useless_server -s`  
 
 ## Client part
