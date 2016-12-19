@@ -79,12 +79,6 @@ int main(int argc, char *argv[]) {
 	rewind(passwd_f);
 	fprintf(passwd_f, "%s", "1111111111111111111\n");
 	fclose(passwd_f);
-	//*unlink("passwd.txt");
-
-	/*printf("Enter passwd:\n");
-	scanf("%s", passwd);*/
-
-	//const char passwd[] = "hallo_world";
 
 	char *hash_c = crypt(passwd, "$6$dvfgd$\0");
 	strcpy(hash, hash_c); //to save hash properly
