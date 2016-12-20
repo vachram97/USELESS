@@ -21,7 +21,7 @@ Compilation:
 ```
 g++ -c reader.cpp
 g++ -c execution.cpp
-g++ mycrons.cpp reader.o execution.o -o useless_client
+g++ mycrons.cpp reader.o execution.o -o useless_client -lcrypt
 ```
 
 Launch command: `useless_client mycronfile hostfile`  

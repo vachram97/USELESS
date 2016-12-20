@@ -8,6 +8,9 @@
 #ifndef INCLUDES_H_
 #define INCLUDES_H_
 
+#ifndef _GNU_SOURCE
+#define _GNU_SOURCE
+#endif
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <fcntl.h>
@@ -27,6 +30,7 @@
 #include <time.h>
 #include <poll.h>
 #include <mqueue.h>
+#include <crypt.h>
 
 #define BUF_SIZE 8128
 

@@ -38,7 +38,7 @@ int verify_client(int, char *);
 int main(int argc, char *argv[]) {
 
 	if (argc != 2) {
-		printf("Usage: %s port OR %s cmd\n", argv[0], argv[0]);
+		printf("Usage: %s port OR %s -s\n", argv[0], argv[0]);
 		return 0;
 	}
 
@@ -60,10 +60,9 @@ int main(int argc, char *argv[]) {
 		printf ("Usage: %s mycronfile hostfile\n", argv[0]);
 		return -1;
 	}
-
-	char passwd[20] = "passwd";
-	char hash[100];
-
+	
+	char passwd[20];
+	
 	FILE *passwd_f = fopen("passwd.txt", "r+");
 	if (passwd_f == NULL){
 		perror("NO PASSWD FILE");
@@ -78,23 +77,8 @@ int main(int argc, char *argv[]) {
 		}
 		passwd[i] = c;
 	}
-	//to clean passwd file
-	rewind(passwd_f);
-	fprintf(passwd_f, "%s", "1111111111111111111\n");
 	fclose(passwd_f);
-
-	string salt = "$6$";
-	srand(time(NULL));
-	for (int i = 0; i < 5; i++) {
-		salt += ((char)rand()%26 + 'a');
-	}
-	salt = salt + "$";
-
-	//save passwd hash
-	char *hash_c = crypt(passwd, salt.c_str());
-	strcpy(hash, hash_c); //to save hash properly
-	memset(passwd, 0, 20);
-
+	
 	//creating listening socket
 	int list_sock = socket(AF_INET, SOCK_STREAM, 0);
 
@@ -114,10 +98,10 @@ int main(int argc, char *argv[]) {
 		return -1;
 	}
 	//making daemon
-	close(0);
+	/*close(0);
 	close(1);
 	close(2);
-	if (0 != fork()) return 0;
+	if (0 != fork()) return 0;*/
 
 	//to know pid for stopping
 	FILE *pid_f = fopen ("pid.txt", "w");
@@ -144,7 +128,7 @@ int main(int argc, char *argv[]) {
 		}
 		close(list_sock);
 		//checking passwd
-		if (-1 == verify_client(cl_sock, hash)) {
+		if (-1 == verify_client(cl_sock, passwd)) {
 			close(cl_sock);
 			exit(EXIT_FAILURE);
 		}
@@ -162,6 +146,7 @@ int main(int argc, char *argv[]) {
 			}
 			//command execution
 			if (strncmp(buf, "COMM", 4) == 0) {
+				puts("lalal");
 				strcpy(buf, "OK");
 				send(cl_sock, buf, strlen(buf)+1, MSG_NOSIGNAL);
 				execute_command_localhost(buf + 5);
@@ -243,20 +228,43 @@ int last_log_send(int fd) {
 }
 
 /*
- * checking passwd
+ * checking passwd (CHAP)
  */
-int verify_client(int fd, char *hash) {
+int verify_client(int fd, char *passwd) {
 	char buf[BUF_SIZE];
 	int count;
-	//receiving passwd
+	int chall_length = 8;
+	
+	//receiving request
+	if (-1 == recv(fd, buf, BUF_SIZE, MSG_NOSIGNAL)) {
+		return -1;
+	}
+	
+	if (strcmp(buf, "CONNECT") != 0) {
+		return -1;
+	};
+	
+	//generating challenge
+	string challenge;
+	srand(time(NULL));
+	for (int i = 0; i < chall_length; i++) {
+		challenge += ((char)rand()%26 + 'a');
+	}
+	
+	if (-1 == send(fd, challenge.c_str(), challenge.length() + 1, MSG_NOSIGNAL)) {
+		return -1;
+	}
+	//making salt and calc hash
+	string salt = "$6$" + challenge + "$";
+	char *hash_local = crypt(passwd, salt.c_str());
+	
 	if (-1 == (count = recv(fd, buf, BUF_SIZE, MSG_NOSIGNAL))) {
 		return -1;
 	}
 	buf[count] = '\0';
-	//calculating hash for passwd and comparing it with saved
-	char *hash_2 = crypt(buf, hash);
-	printf("%s\n%s\n", hash, hash_2);
-	if (strcmp(hash_2, hash) == 0) {
+	//comparing it with saved
+
+	if (strcmp(hash_local, buf) == 0) {
 		strcpy(buf, "OK\0");
 		send (fd, buf, strlen(buf)+1, MSG_NOSIGNAL);
 		return 0;

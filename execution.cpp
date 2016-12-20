@@ -115,12 +115,26 @@ int logerr(string hostname, string msg){
 }
 
 /*
- * passwd sending
+ * CHAP verification
  */
 int verify(int fd, string passwd) {
 	char buf[BUF_SIZE];
-
-	if (-1 == send(fd, passwd.c_str(), passwd.length(), MSG_NOSIGNAL)) {
+	
+	strcpy(buf, "CONNECT");
+	if (-1 == send(fd, buf, strlen(buf)+1, MSG_NOSIGNAL)) {
+		return -1;
+	}
+	
+	if (-1 == recv(fd, buf, BUF_SIZE, MSG_NOSIGNAL)) {
+		return -1;
+	}
+	char salt[20];
+	//making salt and calculating hash
+	sprintf(salt,"$6$%s$", buf);
+	
+	char *hash = crypt(passwd.c_str(), salt);
+	
+	if (-1 == send(fd, hash, strlen(hash), MSG_NOSIGNAL)) {
 		return -1;
 	}
 	if (-1 == recv(fd, buf, BUF_SIZE, MSG_NOSIGNAL)) {
