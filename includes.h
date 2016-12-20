@@ -34,14 +34,11 @@
 
 #define BUF_SIZE 8128
 
-using namespace std;
+#ifndef PATH_MAX
+#define PATH_MAX 4096
+#endif
 
-/*struct time_s {
-	int month;
-	int day;
-	int hour;
-	int min;
-};*/
+using namespace std;
 
 struct command {
 	string command_line;

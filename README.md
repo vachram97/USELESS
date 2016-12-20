@@ -28,7 +28,7 @@ Launch command: `useless_client mycronfile hostfile`
 Stop command `useless_client -s`  
 Receiving logs command: `useless_client -r`
 
-Mycronfile should contain following type of strings:
+Mycronfile should contain following type of strings (each contains at maximum `MAX_LINE_LENGTH_ALLOWED = 500` chars:
 ```
 min hour day month host command
 ```
@@ -44,7 +44,7 @@ where \* means all allowed combinations for this measure
 
 Host can be `localhost` or `all` or defined in hostfile
 
-Host file should contain strings like:
+Host file should contain strings(each contains at maximum `MAX_LINE_LENGTH_ALLOWED = 500` chars) like:
 ```
 hostname ip port passwd
 ```  

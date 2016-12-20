@@ -11,6 +11,7 @@
 
 int mdays[12] = {31, 28, 31, 30, 31, 31, 30, 31, 30, 31, 30, 31};//days in month
 
+#define MAX_LINE_LENGTH_ALLOWED 500
 /*
  * function gets file and pointer at tasks structure, fills it with commands
  * return 0 on success, -1 otherwise
@@ -43,6 +44,12 @@ int read_tasks(char * file, vector <command> *tasks, vector<task> *task_queue) {
 		if (input.fail()) break;
 		if (line.length() == 0) continue; //zero-length lines should be ignored
 		if (line[0] == '#') continue; //comments shouldn't be read
+		
+		if (line.length() > MAX_LINE_LENGTH_ALLOWED) {
+			printf("Too long line in %d string of '%s': ignored\n", line_number, file);
+			continue;
+		}
+		
 		//getting parsed structure
 		if (-1 == parse_string(line, &comm)) {
 			printf("Error in %d string of '%s': ignored\n", line_number, file);
@@ -223,6 +230,10 @@ int read_server_list(char * file, vector <host> *host_list) {
 		if (input.fail()) break;
 		if (line.length() == 0) continue; //zero-length line ignoring
 		if (line[0] == '#') continue; //comments shouldn't be read
+		if (line.length() > MAX_LINE_LENGTH_ALLOWED) {
+			printf("Too long line in %d string of '%s': ignored\n", line_number, file);
+			continue;
+		}
 
 		//get name
 		size_t space = line.find(' ');
