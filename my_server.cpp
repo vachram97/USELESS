@@ -98,10 +98,10 @@ int main(int argc, char *argv[]) {
 		return -1;
 	}
 	//making daemon
-	close(0);
+	/*close(0);
 	close(1);
 	close(2);
-	if (0 != fork()) return 0;
+	if (0 != fork()) return 0;*/
 
 	//to know pid for stopping
 	FILE *pid_f = fopen ("pid.txt", "w");

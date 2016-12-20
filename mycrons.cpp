@@ -64,7 +64,12 @@ int main (int argc, char *argv[]) {
 	//saving paths
 	strcpy(mycron_path, argv[optind]);
 	strcpy(server_path, argv[optind+1]);
-
+	
+	if ((strlen(argv[optind] > PATH_MAX-1) || (strlen(argv[optind+1]) > PATH_MAX - 1))) {
+		printf("Arguments length is too big\n");
+		return -1;
+	}
+		
 	//reading mycrontab
 	if (-1 == read_tasks(mycron_path, &command_list, &task_queue)) {
 		printf("Reading mycrontab failed\n");
