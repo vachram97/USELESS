@@ -65,7 +65,7 @@ int main (int argc, char *argv[]) {
 	strcpy(mycron_path, argv[optind]);
 	strcpy(server_path, argv[optind+1]);
 	
-	if ((strlen(argv[optind] > PATH_MAX-1) || (strlen(argv[optind+1]) > PATH_MAX - 1))) {
+	if ((strlen(argv[optind]) > PATH_MAX-1) || (strlen(argv[optind+1]) > PATH_MAX - 1)) {
 		printf("Arguments length is too big\n");
 		return -1;
 	}

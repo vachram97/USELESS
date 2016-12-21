@@ -78,7 +78,7 @@ int main(int argc, char *argv[]) {
 		passwd[i] = c;
 	}
 	fclose(passwd_f);
-	
+	//TODO: SO_RECVTIMEO and SO_SNDTIMEO options in setsockopt() if nothing goes to socket during long time
 	//creating listening socket
 	int list_sock = socket(AF_INET, SOCK_STREAM, 0);
 
@@ -98,10 +98,10 @@ int main(int argc, char *argv[]) {
 		return -1;
 	}
 	//making daemon
-	/*close(0);
+	close(0);
 	close(1);
 	close(2);
-	if (0 != fork()) return 0;*/
+	if (0 != fork()) return 0;
 
 	//to know pid for stopping
 	FILE *pid_f = fopen ("pid.txt", "w");
@@ -212,7 +212,7 @@ int last_log_send(int fd) {
 	int file;
 	//if no logfile found
 	if (-1 == (file = open("localhost.log", O_RDONLY))) {
-		strcpy(buf, "NONE\0");
+		strcpy(buf, "NONE");
 		send(fd, buf, strlen(buf)+1, MSG_NOSIGNAL);
 		return -1;
 	}
@@ -262,7 +262,7 @@ int verify_client(int fd, char *passwd) {
 		return -1;
 	}
 	buf[count] = '\0';
-	//comparing it with saved
+	//comparing hash from client with saved
 
 	if (strcmp(hash_local, buf) == 0) {
 		strcpy(buf, "OK\0");
